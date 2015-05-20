@@ -2,39 +2,37 @@
 #include "screenmanager.h"
 #include "statemachine.h"
 
-#define SAMPLE_XML_PATH "./Sample-User.xml"
-#define CHECK_RC(rc, what)											\
-        if (rc != XN_STATUS_OK)											\
-        {																\
-                qDebug("%s failed: %s\n", what, xnGetStatusString(rc));		\
-                return rc;													\
-        }
-#define CHECK_ERRORS(rc, errors, what)		\
-        if (rc == XN_STATUS_NO_NODE_PRESENT)	\
-{										\
-        XnChar strError[1024];				\
-        errors.ToString(strError, 1024);	\
-        qDebug("%s\n", strError);			\
-        return (rc);						\
-}
+//#define SAMPLE_XML_PATH "./Sample-User.xml"
+//#define CHECK_RC(rc, what)											\
+//        if (rc != XN_STATUS_OK)											\
+//        {																\
+//                qDebug("%s failed: %s\n", what, xnGetStatusString(rc));		\
+//                return rc;													\
+//        }
+//#define CHECK_ERRORS(rc, errors, what)		\
+//        if (rc == XN_STATUS_NO_NODE_PRESENT)	\
+//{										\
+//        XnChar strError[1024];				\
+//        errors.ToString(strError, 1024);	\
+//        qDebug("%s\n", strError);			\
+//        return (rc);						\
+//}
 
-xn::Context NuiManager::g_Context;
-xn::ScriptNode NuiManager::g_ScriptNode;
-xn::DepthGenerator NuiManager::g_DepthGenerator;
-xn::UserGenerator NuiManager::g_UserGenerator;
-xn::Recorder* NuiManager::g_pRecorder;
+//xn::Context NuiManager::g_Context;
+//xn::ScriptNode NuiManager::g_ScriptNode;
+//xn::DepthGenerator NuiManager::g_DepthGenerator;
+//xn::UserGenerator NuiManager::g_UserGenerator;
+//xn::Recorder* NuiManager::g_pRecorder;
 
-XnUserID NuiManager::g_nPlayer;
-XnBool NuiManager::g_bCalibrated;
-XnBool NuiManager::g_bPause;
+//XnUserID NuiManager::g_nPlayer;
+//XnBool NuiManager::g_bCalibrated;
+//XnBool NuiManager::g_bPause;
 
 
 NuiManager::NuiManager(ScreenManager* parent) : sm(parent)
 {
-    g_nPlayer = 0;
-    g_bCalibrated = false;
 
-    g_bPause = false;
+
     should_run = true;
     is_hand_init = true;
 
@@ -51,7 +49,18 @@ void NuiManager::run()
     while (should_run)
     {
         // Read next available data
-        g_Context.WaitOneUpdateAll(g_DepthGenerator);
+        // Wait for 0ms, just quickly test if it is time to process a skeleton
+        if ( WAIT_OBJECT_0 == WaitForSingleObject(m_hNextSkeletonEvent, 0) )
+        {
+            NUI_SKELETON_FRAME skeletonFrame = {0};
+
+            // Get the skeleton frame that is ready
+            if (FAILED(m_pNuiSensor->NuiSkeletonGetNextFrame(0, &skeletonFrame)))
+            {
+                // skip this frame
+                continue;
+            }
+        }
 
         if (g_nPlayer != 0)
         {
@@ -113,121 +122,143 @@ void NuiManager::init()
 }
 int NuiManager::init_device()
 {
-    XnStatus rc = XN_STATUS_OK;
-    xn::EnumerationErrors errors;
+    INuiSensor * pNuiSensor;
 
-    rc = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, g_ScriptNode, &errors);
-    CHECK_ERRORS(rc, errors, "InitFromXmlFile");
-    CHECK_RC(rc, "InitFromXml");
-
-    rc = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
-    CHECK_RC(rc, "Find depth generator");
-    rc = g_Context.FindExistingNode(XN_NODE_TYPE_USER, g_UserGenerator);
-    CHECK_RC(rc, "Find user generator");
-
-    if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON) ||
-            !g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
+    int iSensorCount = 0;
+    HRESULT hr = NuiGetSensorCount(&iSensorCount);
+    if (FAILED(hr))
     {
-            qDebug("User generator doesn't support either skeleton or pose detection.\n");
-            return XN_STATUS_ERROR;
+        qDebug("FAILED: init_device > NuiGetSensorCount, ; %ld", hr);
+        return hr;
     }
 
-    g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
-
-    rc = g_Context.StartGeneratingAll();
-    CHECK_RC(rc, "StartGenerating");
-
-    XnCallbackHandle hUserCBs, hCalibrationStartCB, hCalibrationCompleteCB, hPoseCBs;
-    g_UserGenerator.RegisterUserCallbacks(NewUser, LostUser, NULL, hUserCBs);
-    rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationStart(CalibrationStarted, NULL, hCalibrationStartCB);
-    CHECK_RC(rc, "Register to calbiration start");
-    rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationComplete(CalibrationCompleted, NULL, hCalibrationCompleteCB);
-    CHECK_RC(rc, "Register to calibration complete");
-    rc = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(PoseDetected, NULL, hPoseCBs);
-    CHECK_RC(rc, "Register to pose detected");
-    return 0;
-}
-
-XnBool NuiManager::AssignPlayer(XnUserID user)
-{
-    return TRUE;
-}
-
-void NuiManager::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
-{
-    qDebug("*********NewUser**********\nnew user id : %d \n now users:", user);
-    g_UserGenerator.GetPoseDetectionCap().StartPoseDetection("Psi", user);
-    XnUserID aUsers[20];
-    XnUInt16 nUsers = 20;
-    g_UserGenerator.GetUsers(aUsers, nUsers);
-
-    for (int i = 0; i < nUsers; ++i)
+    // Look at each Kinect sensor
+    for (int i = 0; i < iSensorCount; ++i)
     {
-        qDebug(" %d ", aUsers[i]);
-    }
-    qDebug("\n********************\n");
-}
-void NuiManager::FindPlayer()
-{
-}
-void NuiManager::LostPlayer()
-{
-}
-void NuiManager::LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
-{
-    qDebug("*********LostPlayer**********\nlost user id : %d \n now users:", user);
-    XnUserID aUsers[20];
-    XnUInt16 nUsers = 20;
-    g_UserGenerator.GetUsers(aUsers, nUsers);
-
-    for (int i = 0; i < nUsers; ++i)
-    {
-        qDebug(" %d ", aUsers[i]);
-    }
-    qDebug("\n********************\n");
-}
-void NuiManager::PoseDetected(xn::PoseDetectionCapability& pose,
-    const XnChar* strPose, XnUserID user, void* cxt)
-{
-    qDebug("*********PoseDetected**********\n");
-    qDebug("Found pose \"%s\" for user %d\n", strPose, user);
-    g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
-    g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(user);
-    qDebug("*********************\n");
-}
-
-void NuiManager::CalibrationStarted(xn::SkeletonCapability& skeleton,
-    XnUserID user, void* cxt)
-{
-    qDebug("*********CalibrationStarted**********\n");
-    qDebug("Calibration started for user: %d\n", user);
-    qDebug("******************************\n");
-}
-
-void NuiManager::CalibrationCompleted(xn::SkeletonCapability& skeleton,
-    XnUserID user, XnCalibrationStatus eStatus, void* cxt)
-{
-    qDebug("*********CalibrationCompleted*********\n");
-    qDebug("Calibration done for user [%d] %ssuccessfully\n", user, (eStatus == XN_CALIBRATION_STATUS_OK)?"":"un");
-    if (eStatus == XN_CALIBRATION_STATUS_OK)
-    {
-        g_UserGenerator.GetSkeletonCap().StartTracking(user);
-        qDebug("users now: ");
-        XnUserID aUsers[20];
-        XnUInt16 nUsers = 20;
-        g_UserGenerator.GetUsers(aUsers, nUsers);
-        for (int i = 0; i < nUsers; ++i)
+        // Create the sensor so we can check status, if we can't create it, move on to the next
+        hr = NuiCreateSensorByIndex(i, &pNuiSensor);
+        if (FAILED(hr))
         {
-            qDebug(" %d ", aUsers[i]);
+            qDebug("FAILED: init_device > NuiCreateSensorByIndex, %d; %ld", i, hr);
+            continue;
         }
-        g_nPlayer = user;
 
+        // Get the status of the sensor, and if connected, then we can initialize it
+        hr = pNuiSensor->NuiStatus();
+        if (S_OK == hr)
+        {
+            m_pNuiSensor = pNuiSensor;
+            break;
+        }
 
-    }else
-    {
-        qDebug("Request Calibration on user %d again\n", user);
-        g_UserGenerator.GetSkeletonCap().RequestCalibration(user, false);
+        // This sensor wasn't OK, so release it since we're not using it
+        pNuiSensor->Release();
     }
-    qDebug("\n*************************\n");
+
+    if (NULL != m_pNuiSensor)
+    {
+        // Initialize the Kinect and specify that we'll be using skeleton
+        hr = m_pNuiSensor->NuiInitialize(NUI_INITIALIZE_FLAG_USES_SKELETON);
+        if (SUCCEEDED(hr))
+        {
+            // Create an event that will be signaled when skeleton data is available
+            m_hNextSkeletonEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+
+            // Open a skeleton stream to receive skeleton data
+            hr = m_pNuiSensor->NuiSkeletonTrackingEnable(m_hNextSkeletonEvent, 0);
+        }
+    }
+
+    if (NULL == m_pNuiSensor || FAILED(hr))
+    {
+        qDebug("No ready Kinect found!");
+        return E_FAIL;
+    }
+
+    return hr;
 }
+
+
+//XnBool NuiManager::AssignPlayer(XnUserID user)
+//{
+//    return TRUE;
+//}
+
+//void NuiManager::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
+//{
+//    qDebug("*********NewUser**********\nnew user id : %d \n now users:", user);
+//    g_UserGenerator.GetPoseDetectionCap().StartPoseDetection("Psi", user);
+//    XnUserID aUsers[20];
+//    XnUInt16 nUsers = 20;
+//    g_UserGenerator.GetUsers(aUsers, nUsers);
+
+//    for (int i = 0; i < nUsers; ++i)
+//    {
+//        qDebug(" %d ", aUsers[i]);
+//    }
+//    qDebug("\n********************\n");
+//}
+//void NuiManager::FindPlayer()
+//{
+//}
+//void NuiManager::LostPlayer()
+//{
+//}
+//void NuiManager::LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
+//{
+//    qDebug("*********LostPlayer**********\nlost user id : %d \n now users:", user);
+//    XnUserID aUsers[20];
+//    XnUInt16 nUsers = 20;
+//    g_UserGenerator.GetUsers(aUsers, nUsers);
+
+//    for (int i = 0; i < nUsers; ++i)
+//    {
+//        qDebug(" %d ", aUsers[i]);
+//    }
+//    qDebug("\n********************\n");
+//}
+//void NuiManager::PoseDetected(xn::PoseDetectionCapability& pose,
+//    const XnChar* strPose, XnUserID user, void* cxt)
+//{
+//    qDebug("*********PoseDetected**********\n");
+//    qDebug("Found pose \"%s\" for user %d\n", strPose, user);
+//    g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
+//    g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(user);
+//    qDebug("*********************\n");
+//}
+
+//void NuiManager::CalibrationStarted(xn::SkeletonCapability& skeleton,
+//    XnUserID user, void* cxt)
+//{
+//    qDebug("*********CalibrationStarted**********\n");
+//    qDebug("Calibration started for user: %d\n", user);
+//    qDebug("******************************\n");
+//}
+
+//void NuiManager::CalibrationCompleted(xn::SkeletonCapability& skeleton,
+//    XnUserID user, XnCalibrationStatus eStatus, void* cxt)
+//{
+//    qDebug("*********CalibrationCompleted*********\n");
+//    qDebug("Calibration done for user [%d] %ssuccessfully\n", user, (eStatus == XN_CALIBRATION_STATUS_OK)?"":"un");
+//    if (eStatus == XN_CALIBRATION_STATUS_OK)
+//    {
+//        g_UserGenerator.GetSkeletonCap().StartTracking(user);
+//        qDebug("users now: ");
+//        XnUserID aUsers[20];
+//        XnUInt16 nUsers = 20;
+//        g_UserGenerator.GetUsers(aUsers, nUsers);
+//        for (int i = 0; i < nUsers; ++i)
+//        {
+//            qDebug(" %d ", aUsers[i]);
+//        }
+//        g_nPlayer = user;
+
+
+//    }else
+//    {
+//        qDebug("Request Calibration on user %d again\n", user);
+//        g_UserGenerator.GetSkeletonCap().RequestCalibration(user, false);
+//    }
+//    qDebug("\n*************************\n");
+//}
 

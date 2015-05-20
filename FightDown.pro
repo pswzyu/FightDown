@@ -17,10 +17,14 @@ TEMPLATE = app
 #LIBS += -lXnCore -lOpenNI
 
 # in windows
-LIBS += -L"D:/Program Files/OpenNI/Lib64/" -lopenNI64
-INCLUDEPATH += "D:/Program Files/OpenNI/Include"
-LIBS += -L"D:/Program Files/PrimeSense/NITE/Lib64/" -lXnVNITE64_1_5_2
-INCLUDEPATH += "D:/Program Files/PrimeSense/NITE/Include"
+#LIBS += -L"D:/Program Files/OpenNI/Lib64/" -lopenNI64
+#INCLUDEPATH += "D:/Program Files/OpenNI/Include"
+#LIBS += -L"D:/Program Files/PrimeSense/NITE/Lib64/" -lXnVNITE64_1_5_2
+#INCLUDEPATH += "D:/Program Files/PrimeSense/NITE/Include"
+
+# kinect sdk
+LIBS += -L"C:/Program Files/Microsoft SDKs/Kinect/v1.8/lib/amd64/" -lKinect10
+INCLUDEPATH += "C:/Program Files/Microsoft SDKs/Kinect/v1.8/inc/"
 
 
 
@@ -54,7 +58,8 @@ HEADERS  += mainwindow.h \
     badguy.h \
     dart.h \
     nuimanager.h \
-    manager.h
+    manager.h \
+    stdafx.h
 
 FORMS    += mainwindow.ui
 

@@ -4,9 +4,8 @@
 #include "manager.h"
 #include <QThread>
 
-#include <XnOpenNI.h>
-#include <XnCodecIDs.h>
-#include <XnCppWrapper.h>
+#include "stdafx.h"
+#include <NuiApi.h>
 
 class ScreenManager;
 
@@ -15,6 +14,8 @@ class NuiManager : public QThread, public Manager
 public:
     ScreenManager* sm;
 
+    // old code used for openni
+    /*
     static xn::Context g_Context;
     static xn::ScriptNode g_ScriptNode;
     static xn::DepthGenerator g_DepthGenerator;
@@ -24,10 +25,13 @@ public:
     static XnUserID g_nPlayer;
     static XnBool g_bCalibrated;
     static XnBool g_bPause;
+    */
+
+
     bool should_run;
     bool is_hand_init;
-    XnVector3D last_left_hand;
-    XnVector3D last_right_hand;
+    NUI_COLOR_IMAGE_POINT last_left_hand;
+    NUI_COLOR_IMAGE_POINT last_right_hand;
 
     NuiManager(ScreenManager* parent);
     ~NuiManager();
@@ -35,6 +39,9 @@ public:
 
     void init();
     int init_device();
+
+    // used for openni
+    /*
     static XnBool AssignPlayer(XnUserID);
     static void NewUser(xn::UserGenerator&, XnUserID, void*);
     static void FindPlayer();
@@ -44,6 +51,7 @@ public:
     static void CalibrationStarted(xn::SkeletonCapability&, XnUserID, void*);
     //static void CalibrationEnded(xn::SkeletonCapability&, XnUserID, XnBool, void*);
     static void CalibrationCompleted(xn::SkeletonCapability&, XnUserID, XnCalibrationStatus, void*);
+    */
 };
 
 #endif // NUIMANAGER_H
