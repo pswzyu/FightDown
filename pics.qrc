@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/pics">
+        <file>pic/linux-chrome.jpg</file>
+        <file>pic/windows_logo.jpg</file>
+        <file>pic/spike.png</file>
+    </qresource>
+</RCC>
