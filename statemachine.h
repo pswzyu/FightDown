@@ -11,6 +11,9 @@ public:
     double right_dart_velocity_x;
     double right_dart_velocity_y;
 
+    int stage_width;
+    int stage_height;
+
     StateMachine();
     ~StateMachine();
 };

@@ -124,6 +124,8 @@ void BadguyManager::drawBadguys(QPainter* painter)
 
 void BadguyManager::generateBG(QVector2D player_position)
 {
+    player_position;
+
     std::vector<Board> boards = sm->board_manager->getBGBoard(QVector2D(0, 0));
     Badguy temp_bg;
 
@@ -173,6 +175,8 @@ bool BadguyManager::checkCollision()
             continue;
         }
 
-        step++;
+        ++ step;
     }
+
+    return true;
 }

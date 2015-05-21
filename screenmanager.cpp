@@ -64,6 +64,8 @@ void ScreenManager::paintEvent(QPaintEvent* event)
     dart_manager->drawDarts(&painter);
 
     painter.end();
+
+    QWidget::paintEvent(event);
 }
 void ScreenManager::keyPressEvent(QKeyEvent *ke)
 {
@@ -79,4 +81,18 @@ void ScreenManager::keyPressEvent(QKeyEvent *ke)
         QWidget::keyPressEvent(ke);
     }
 }
+
+void ScreenManager::resizeEvent(QResizeEvent * event)
+{
+    QSize size = event->size();
+    state_machine->stage_width = size.width();
+    state_machine->stage_height = size.height();
+
+    QWidget::resizeEvent(event);
+}
+
+
+
+
+
 

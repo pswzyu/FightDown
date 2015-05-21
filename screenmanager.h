@@ -35,6 +35,7 @@ public:
 protected:
     void paintEvent(QPaintEvent* event);
     void keyPressEvent(QKeyEvent *);
+    void resizeEvent(QResizeEvent *);
 public slots:
     void gameLoop();
 };

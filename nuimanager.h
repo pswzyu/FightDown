@@ -7,6 +7,8 @@
 #include "stdafx.h"
 #include <NuiApi.h>
 
+#include "config.h"
+
 class ScreenManager;
 
 class NuiManager : public QThread, public Manager
@@ -27,6 +29,13 @@ public:
     static XnBool g_bPause;
     */
 
+    INuiSensor* m_pNuiSensor;
+    HANDLE m_hNextSkeletonEvent;
+    int g_nPlayer;
+
+    float hand_dart_thres;
+    float dart_speed_factor;
+    float player_move_factor;
 
     bool should_run;
     bool is_hand_init;
@@ -39,6 +48,8 @@ public:
 
     void init();
     int init_device();
+
+    NUI_COLOR_IMAGE_POINT SkeletonPosToScreen(Vector4 skeletonPoint);
 
     // used for openni
     /*

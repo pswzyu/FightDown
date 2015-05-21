@@ -65,11 +65,10 @@ void DartManager::drawDarts(QPainter* painter)
     painter->setBrush( QBrush(QColor(255, 128, 128)) );
 
     for ( std::vector<Dart>::iterator step = dart_arr.begin();
-          step != dart_arr.end(); )
+          step != dart_arr.end(); ++ step)
     {
         painter->drawRect( (*step).position.x(), (*step).position.y(),
                            (*step).width, (*step).height  );
-        step++;
     }
 
     painter->restore();
@@ -84,14 +83,14 @@ void DartManager::moveDart()
         if ( (*step).position.x() < 0 || (*step).position.x() > sm->width() ||
              (*step).position.y() < 0 || (*step).position.y() > sm->height() )
         {
-            dart_arr.erase(step);
+            step = dart_arr.erase(step);
             continue;
         }
         // 更新坐标
         (*step).position.setX( (*step).position.x() + (*step).velocity.x() );
         (*step).position.setY( (*step).position.y() + (*step).velocity.y() );
 
-        step++;
+        ++ step;
     }
 
 }
@@ -109,10 +108,10 @@ bool DartManager::checkCollision( QVector2D point, int width, int height )
         if ( temp_x > point.x() && temp_x < point.x() + width &&
              temp_y > point.y() && temp_y < point.y() + height )
         {
-            dart_arr.erase(step); // 删除这个飞镖
+            step = dart_arr.erase(step); // 删除这个飞镖
             return true; // 返回碰撞了
         }
-        step++;
+        ++ step;
     }
     return false; // 返回没有碰撞
 }

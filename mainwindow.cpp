@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    screen = ui->widget_1;
+    screen = ui->widget_main;
 
     nui = new NuiManager(screen);
     nui->start(); // 开始nui管理线程
@@ -36,3 +36,6 @@ void MainWindow::closeEvent(QCloseEvent *e)
     while (!nui->isFinished()){} // 等待nui线程退出
     QMainWindow::closeEvent(e);
 }
+
+
+

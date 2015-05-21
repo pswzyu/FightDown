@@ -29,23 +29,44 @@
 //XnBool NuiManager::g_bPause;
 
 
-NuiManager::NuiManager(ScreenManager* parent) : sm(parent)
+NuiManager::NuiManager(ScreenManager* parent) : sm(parent), m_hNextSkeletonEvent(NULL),
+    g_nPlayer(0)
 {
 
 
     should_run = true;
     is_hand_init = true;
 
+    hand_dart_thres = 900;
+    dart_speed_factor = 0.2f;
+    player_move_factor = 2;
+
     init_device();
 }
 NuiManager::~NuiManager()
 {
+    if (m_pNuiSensor)
+    {
+        m_pNuiSensor->NuiShutdown();
+    }
 
+    if (m_hNextSkeletonEvent && (m_hNextSkeletonEvent != INVALID_HANDLE_VALUE))
+    {
+        CloseHandle(m_hNextSkeletonEvent);
+    }
 }
 void NuiManager::run()
 {
     float l_speed_x = 0, l_speed_y = 0;
     float r_speed_x = 0, r_speed_y = 0;
+
+    NUI_SKELETON_DATA* one_skeleton = NULL;
+    NUI_COLOR_IMAGE_POINT torso_pos;
+    NUI_COLOR_IMAGE_POINT this_left_hand;
+    NUI_COLOR_IMAGE_POINT this_right_hand;
+
+    int numof_players = 0;
+
     while (should_run)
     {
         // Read next available data
@@ -60,60 +81,84 @@ void NuiManager::run()
                 // skip this frame
                 continue;
             }
-        }
 
-        if (g_nPlayer != 0)
-        {
-            // TODO:获取玩家数量
-            sm->state_machine->any_player = 1; // 设定为已有玩家
-            // 获取用户躯干
-            XnSkeletonJointPosition joint_torso;
-            g_UserGenerator.GetSkeletonCap()
-                    .GetSkeletonJointPosition(g_nPlayer, XN_SKEL_TORSO, joint_torso);
+            // smooth out the skeleton data
+            m_pNuiSensor->NuiTransformSmooth(&skeletonFrame, NULL);
 
-            sm->state_machine->player_x = joint_torso.position.X * 0.6 + sm->width() / 2  ;
-            //qDebug("player_x : %lf", sm->state_machine->player_x);
+            numof_players = 0;
 
-            // 获取用户左右手的位置
-            XnSkeletonJointPosition joint_left, joint_right;
-            g_UserGenerator.GetSkeletonCap()
-                .GetSkeletonJointPosition(g_nPlayer, XN_SKEL_LEFT_HAND, joint_left);
-            g_UserGenerator.GetSkeletonCap()
-                .GetSkeletonJointPosition(g_nPlayer, XN_SKEL_RIGHT_HAND, joint_right);
-//            qDebug( "user %d l:(%f,%f) r:(%f, %f)\n", g_nPlayer,
-//                joint_left.position.X, joint_left.position.Y,
-//                joint_right.position.X, joint_right.position.Y );
-            if (is_hand_init)
+            for (int i = 0 ; i < NUI_SKELETON_COUNT; ++i)
             {
-                last_left_hand = joint_left.position;
-                last_right_hand = joint_right.position;
-                is_hand_init = false;
-            }else
-            {
-                l_speed_x = joint_left.position.X - last_left_hand.X;
-                l_speed_y = joint_left.position.Y - last_left_hand.Y;
-                r_speed_x = joint_right.position.X - last_right_hand.X;
-                r_speed_y = joint_right.position.Y - last_right_hand.Y;
+                NUI_SKELETON_TRACKING_STATE trackingState = skeletonFrame.SkeletonData[i].eTrackingState;
 
-                if ( l_speed_x < 0 && l_speed_x * l_speed_x + l_speed_y * l_speed_y > 60 * 60 )
+                if (NUI_SKELETON_TRACKED == trackingState)
                 {
-                    sm->state_machine->left_dart_velocity_x = l_speed_x / 20;
-                    sm->state_machine->left_dart_velocity_y = -l_speed_y / 20;
-                }
-                if ( r_speed_x > 0 && r_speed_x * r_speed_x + r_speed_y * r_speed_y > 60 * 60 )
-                {
-                    sm->state_machine->right_dart_velocity_x = r_speed_x / 20;
-                    sm->state_machine->right_dart_velocity_y = -r_speed_y / 20;
-                }
+                    // count how many tracked users
+                    ++ numof_players;
+                    // get the torso pos and the hand pos
+                    // torso pos
+                    one_skeleton = &(skeletonFrame.SkeletonData[i]);
+                    torso_pos = SkeletonPosToScreen(
+                                one_skeleton->SkeletonPositions[NUI_SKELETON_POSITION_HIP_CENTER]);
+                    sm->state_machine->player_x = torso_pos.x * player_move_factor +
+                            sm->state_machine->stage_width / 2 * (1 - player_move_factor);
 
-                last_left_hand = joint_left.position;
-                last_right_hand = joint_right.position;
+
+                    // hand pos
+                    this_left_hand = SkeletonPosToScreen(
+                                one_skeleton->SkeletonPositions[NUI_SKELETON_POSITION_HAND_LEFT]);
+                    this_right_hand = SkeletonPosToScreen(
+                                one_skeleton->SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT]);
+                    //qDebug("rhx:%ld, rhy%ld",this_right_hand.x, this_right_hand.y);
+                    // left hand
+                    if (is_hand_init)
+                    {
+                        last_left_hand = this_left_hand;
+                        last_right_hand = this_right_hand;
+                        is_hand_init = false;
+                    }else
+                    {
+                        l_speed_x = this_left_hand.x - last_left_hand.x;
+                        l_speed_y = this_left_hand.y - last_left_hand.y;
+                        r_speed_x = this_right_hand.x - last_right_hand.x;
+                        r_speed_y = this_right_hand.y - last_right_hand.y;
+
+                        if ( l_speed_x < 0 && l_speed_x * l_speed_x + l_speed_y * l_speed_y > hand_dart_thres )
+                        {
+                            sm->state_machine->left_dart_velocity_x = l_speed_x * dart_speed_factor;
+                            sm->state_machine->left_dart_velocity_y = l_speed_y * dart_speed_factor;
+                        }
+                        if ( r_speed_x > 0 && r_speed_x * r_speed_x + r_speed_y * r_speed_y > hand_dart_thres )
+                        {
+                            sm->state_machine->right_dart_velocity_x = r_speed_x * dart_speed_factor;
+                            sm->state_machine->right_dart_velocity_y = r_speed_y * dart_speed_factor;
+                        }
+
+                        last_left_hand = this_left_hand;
+                        last_right_hand = this_right_hand;
+                    }
+
+                    // TODO: only allow one player now
+                    break;
+
+                }
+                else if (NUI_SKELETON_POSITION_ONLY == trackingState)
+                {
+                    // ignore this type
+                }
             }
-        }else
-        {
-            sm->state_machine->any_player = 0; // 置为没有玩家
-            is_hand_init = true;
+
+            g_nPlayer = numof_players;
+            sm->state_machine->any_player = numof_players; // 设定为已有玩家
+
+            // TODO: only support one player now
+            if (numof_players == 0)
+            {
+                is_hand_init = true;
+            }
         }
+
+
     }
 }
 void NuiManager::init()
@@ -178,6 +223,21 @@ int NuiManager::init_device()
     return hr;
 }
 
+
+NUI_COLOR_IMAGE_POINT NuiManager::SkeletonPosToScreen(Vector4 skeletonPoint)
+{
+    long x, y;
+    unsigned short depth;
+
+    // Calculate the skeleton's position on the screen
+    // NuiTransformSkeletonToDepthImage returns coordinates in NUI_IMAGE_RESOLUTION_320x240 space
+    NuiTransformSkeletonToDepthImage(skeletonPoint, &x, &y, &depth);
+
+    float screenPointX = static_cast<float>(x * sm->state_machine->stage_width) / KINECT_WIDTH;
+    float screenPointY = static_cast<float>(y * sm->state_machine->stage_height) / KINECT_HEIGHT;
+
+    return NUI_COLOR_IMAGE_POINT{screenPointX, screenPointY};
+}
 
 //XnBool NuiManager::AssignPlayer(XnUserID user)
 //{

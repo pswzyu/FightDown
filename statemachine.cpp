@@ -8,4 +8,7 @@ StateMachine::StateMachine()
     left_dart_velocity_y = 0;
     right_dart_velocity_x = 0;
     right_dart_velocity_y = 0;
+
+    stage_width = 0;
+    stage_height = 0;
 }

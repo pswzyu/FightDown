@@ -59,7 +59,8 @@ HEADERS  += mainwindow.h \
     dart.h \
     nuimanager.h \
     manager.h \
-    stdafx.h
+    stdafx.h \
+    config.h
 
 FORMS    += mainwindow.ui
 
