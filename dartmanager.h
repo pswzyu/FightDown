@@ -21,7 +21,7 @@ public:
     void addDart();
     void moveDart();
     void drawDarts(QPainter* painter);
-    bool checkCollision( QVector2D, int, int );
+    bool checkCollision( QVector2D, double, double );
 };
 
 #endif // DARTMANAGER_H

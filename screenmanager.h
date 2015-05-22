@@ -18,14 +18,17 @@ public:
     int score;
     int level;
     int difficulty;
-    int rise_speed; // 板上升速度
-    int fall_speed; // 角色下落速度
+    double rise_speed; // 板上升速度
+    double fall_speed; // 角色下落速度
+    double spike_height;
     int game_status; // 游戏状态
     BoardManager* board_manager;
     BadguyManager* badguy_manager;
     PlayerManager* player_manager;
     DartManager* dart_manager;
     StateMachine* state_machine;
+
+    double wh_ratio;
 
     explicit ScreenManager(QWidget* parent = 0);
     ~ScreenManager();

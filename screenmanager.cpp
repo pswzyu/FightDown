@@ -15,9 +15,13 @@ ScreenManager::ScreenManager(QWidget* parent)
     score = 0;
     level = 0;
     difficulty = 1;
-    rise_speed = 2;
-    fall_speed = 2;
+    rise_speed = 0.0031;
+    fall_speed = 0.0031;
     game_status = 1;
+
+    spike_height = 0.04;
+
+    wh_ratio = 1.777;
 
     state_machine = new StateMachine();
     board_manager = new BoardManager(this);
@@ -56,7 +60,7 @@ void ScreenManager::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    painter.drawImage(QRect(0, 0, width(), 20), QImage(":/pics/pic/spike.png"));
+    painter.drawImage(QRect(0, 0, width(), spike_height*height()), QImage(":/pics/pic/spike.png"));
 
     board_manager->drawBoards(&painter);
     badguy_manager->drawBadguys(&painter);
@@ -71,11 +75,11 @@ void ScreenManager::keyPressEvent(QKeyEvent *ke)
 {
     if (ke->key() == Qt::Key_Left)
     {
-        state_machine->player_x = state_machine->player_x - 3;
+        state_machine->player_x = state_machine->player_x - 0.004;
     }
     if (ke->key() == Qt::Key_Right)
     {
-        state_machine->player_x = state_machine->player_x + 3;
+        state_machine->player_x = state_machine->player_x + 0.004;
     }else
     {
         QWidget::keyPressEvent(ke);

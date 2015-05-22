@@ -2,9 +2,9 @@
 
 Badguy::Badguy()
 {
-    height = 50;
-    width = 30;
-    move_speed = 2;
+    height = 0.104;
+    width = 0.05;
+    move_speed = 0.0031;
     on_board = true;
 }
 Badguy::~Badguy()

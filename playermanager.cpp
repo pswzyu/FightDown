@@ -10,9 +10,9 @@
 
 PlayerManager::PlayerManager(ScreenManager* parent) : sm(parent)
 {
-    sm->state_machine->player_x = sm->width() / 2;
-    player.position.setX(sm->width() / 2);
-    player.position.setY(sm->height() - player.height * 2);
+    sm->state_machine->player_x = sm->wh_ratio / 2;
+    player.position.setX(sm->wh_ratio / 2);
+    player.position.setY(1 - player.height * 2);
 
 }
 PlayerManager::~PlayerManager()
@@ -37,8 +37,10 @@ void PlayerManager::drawPlayer(QPainter *painter)
     painter->setBrush(QBrush(QColor(20, 128, 30)));
     //painter->drawRect(player.position.x(), player.position.y(),
     //                  player.width, player.height); // 绘制玩家
-    painter->drawImage(QRect(player.position.x(), player.position.y(),
-                             player.width, player.height),
+    painter->drawImage(QRect(player.position.x()*sm->width()/sm->wh_ratio,
+                             player.position.y()*sm->height(),
+                             player.width*sm->width()/sm->wh_ratio,
+                             player.height*sm->height()),
                        QImage(":/pics/pic/linux-chrome.jpg"));
     painter->restore();
 }
@@ -48,21 +50,21 @@ void PlayerManager::movePlayer()
     float dis = sm->state_machine->player_x - player.position.x();
     //qDebug("dis:%f", dis);
 
-    player.position.setX( player.position.x() + dis / 10);
+    player.position.setX( player.position.x() + dis / 5);
 
 
     //player.position.setX( sm->state_machine->player_x );
     if ( player.position.x() < 0 ){ player.position.setX(0); }
-    if ( player.position.x() > sm->width() - player.width )
+    if ( player.position.x() > sm->wh_ratio - player.width )
     {
-        player.position.setX(sm->width() - player.width);
+        player.position.setX(sm->wh_ratio - player.width);
     }
     //player.position.setX(sm->state_machine->player_x);
     //player.position.setX(player.position.x() + 0.5);
     //player.position.setX(sm->state_machine->player_x);
 
-    if ( player.position.y() < 20 ||
-         player.position.y() + player.height / 2 > sm->height() )
+    if ( player.position.y() < sm->spike_height ||
+         player.position.y() + player.height / 2 > 1 )
     {
         sm->game_status = 2; // 游戏结束
     }

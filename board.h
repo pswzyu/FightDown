@@ -7,10 +7,10 @@ class Board
 {
 public:
     QVector2D position;
-    int length;
-    static int thickness;
+    double length;
+    static double thickness;
 
-    Board(QVector2D para_position, int para_length);
+    Board(QVector2D para_position, double para_length);
     ~Board();
     void moveUpBy(int para_step);
 };

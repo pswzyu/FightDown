@@ -2,8 +2,8 @@
 
 Dart::Dart()
 {
-    width = 5;
-    height = 5;
+    width = 0.01;
+    height = 0.01;
 }
 Dart::~Dart()
 {

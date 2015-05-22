@@ -33,14 +33,14 @@ public:
     HANDLE m_hNextSkeletonEvent;
     int g_nPlayer;
 
-    float hand_dart_thres;
-    float dart_speed_factor;
-    float player_move_factor;
+    double hand_dart_thres;
+    double dart_speed_factor;
+    double player_move_factor;
 
     bool should_run;
     bool is_hand_init;
-    NUI_COLOR_IMAGE_POINT last_left_hand;
-    NUI_COLOR_IMAGE_POINT last_right_hand;
+    Vector4 last_left_hand;
+    Vector4 last_right_hand;
 
     NuiManager(ScreenManager* parent);
     ~NuiManager();
@@ -49,7 +49,7 @@ public:
     void init();
     int init_device();
 
-    NUI_COLOR_IMAGE_POINT SkeletonPosToScreen(Vector4 skeletonPoint);
+    Vector4 SkeletonPosToScreen(Vector4 skeletonPoint);
 
     // used for openni
     /*

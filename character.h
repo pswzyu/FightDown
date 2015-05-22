@@ -7,10 +7,10 @@ class Character
 {
 public:
     QVector2D position; // 角色左上角的位置
-    int width; // 角色的宽
-    int height; // 角色的高
+    double width; // 角色的宽
+    double height; // 角色的高
     int animation_status; // 动作状态
-    int move_speed; // 移动速度
+    double move_speed; // 移动速度
 
     Character();
     virtual ~Character();

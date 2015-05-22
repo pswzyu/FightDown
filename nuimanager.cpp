@@ -37,7 +37,7 @@ NuiManager::NuiManager(ScreenManager* parent) : sm(parent), m_hNextSkeletonEvent
     should_run = true;
     is_hand_init = true;
 
-    hand_dart_thres = 900;
+    hand_dart_thres = 0.01f;
     dart_speed_factor = 0.2f;
     player_move_factor = 2;
 
@@ -61,9 +61,9 @@ void NuiManager::run()
     float r_speed_x = 0, r_speed_y = 0;
 
     NUI_SKELETON_DATA* one_skeleton = NULL;
-    NUI_COLOR_IMAGE_POINT torso_pos;
-    NUI_COLOR_IMAGE_POINT this_left_hand;
-    NUI_COLOR_IMAGE_POINT this_right_hand;
+    Vector4 torso_pos;
+    Vector4 this_left_hand;
+    Vector4 this_right_hand;
 
     int numof_players = 0;
 
@@ -101,7 +101,7 @@ void NuiManager::run()
                     torso_pos = SkeletonPosToScreen(
                                 one_skeleton->SkeletonPositions[NUI_SKELETON_POSITION_HIP_CENTER]);
                     sm->state_machine->player_x = torso_pos.x * player_move_factor +
-                            sm->state_machine->stage_width / 2 * (1 - player_move_factor);
+                            sm->wh_ratio / 2 * (1 - player_move_factor);
 
 
                     // hand pos
@@ -224,7 +224,7 @@ int NuiManager::init_device()
 }
 
 
-NUI_COLOR_IMAGE_POINT NuiManager::SkeletonPosToScreen(Vector4 skeletonPoint)
+Vector4 NuiManager::SkeletonPosToScreen(Vector4 skeletonPoint)
 {
     long x, y;
     unsigned short depth;
@@ -233,10 +233,10 @@ NUI_COLOR_IMAGE_POINT NuiManager::SkeletonPosToScreen(Vector4 skeletonPoint)
     // NuiTransformSkeletonToDepthImage returns coordinates in NUI_IMAGE_RESOLUTION_320x240 space
     NuiTransformSkeletonToDepthImage(skeletonPoint, &x, &y, &depth);
 
-    float screenPointX = static_cast<float>(x * sm->state_machine->stage_width) / KINECT_WIDTH;
-    float screenPointY = static_cast<float>(y * sm->state_machine->stage_height) / KINECT_HEIGHT;
+    float screenPointX = static_cast<float>(x * sm->wh_ratio) / KINECT_WIDTH;
+    float screenPointY = static_cast<float>(y * 1) / KINECT_HEIGHT;
 
-    return NUI_COLOR_IMAGE_POINT{screenPointX, screenPointY};
+    return Vector4{screenPointX, screenPointY, 0, 0};
 }
 
 //XnBool NuiManager::AssignPlayer(XnUserID user)

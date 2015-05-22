@@ -8,8 +8,8 @@ class Dart
 public:
     QVector2D position;
     QVector2D velocity;
-    int width;
-    int height;
+    double width;
+    double height;
 
     Dart();
     ~Dart();

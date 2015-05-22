@@ -2,9 +2,9 @@
 
 Player::Player()
 {
-    height = 50;
-    width = 40;
-    move_speed = 2;
+    height = 0.104;
+    width = 0.0625;
+    move_speed = 0.007;
 }
 /*
     QVector2D position; // 角色左上角的位置
